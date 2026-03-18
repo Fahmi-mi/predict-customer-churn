@@ -1,0 +1,115 @@
+TABULAR ML PIPELINE - PORTOFOLIO PROJECT (Updated: January 01, 2026)
+====================================================================
+
+Deskripsi Proyek
+----------------
+Proyek ini adalah end-to-end configurable ML pipeline untuk data tabular, dirancang khusus agar mudah digunakan di Kaggle Playground Series atau kompetisi tabular lainnya.
+
+Pipeline ini mengutamakan:
+- Modularitas (setiap tahap terpisah)
+- Config-driven (semua pengaturan via file YAML, cukup copy & edit config baru untuk eksperimen berbeda)
+- Reproducibility (seed, logging, folder output terstruktur)
+- Experiment tracking (MLflow integration untuk tracking parameter, metrics, dan artifacts)
+- Best practices software engineering (src layout, unit tests, clean structure, typing hints)
+- Performa komputasi tinggi (optimasi loading, preprocessing, dan training)
+- Kemudahan maintenance dan skalabilitas untuk masa depan
+
+Struktur Folder Lengkap (Diperbarui)
+------------------------------------
+
+tabular-ml-pipeline/                  ← Root proyek
+├── config/                           ← SEMUA file konfigurasi YAML
+│   ├── default.yaml                  ← Template utama (paling sering dipakai)
+│   └── local.yaml                    ← Override pribadi (path lokal, dll) → di-.gitignore
+├── data/
+│   ├── raw/                          ← Dataset asli dari Kaggle (train.csv, test.csv) → tidak di-commit
+│   └── processed/                    ← Data dalam format Parquet untuk performa optimal
+│       ├── train.parquet             ← Konversi dari train.csv (lebih cepat & kecil)
+│       └── test.parquet              ← Konversi dari test.csv
+├── logs/                             ← BARU: Logging dan MLflow tracking
+│   ├── *.log                         ← Log files per experiment
+│   └── mlruns/                       ← MLflow tracking artifacts
+├── src/                              ← Kode utama (Python package)
+│   ├── __init__.py
+│   ├── config_loader.py
+│   ├── data_loader.py                ← Support otomatis CSV atau Parquet
+│   ├── preprocessor.py               ← Optimasi memori & kecepatan (sparse, downcast dtype)
+│   ├── feature_engineering.py        ← Vectorized operations, selective enable/disable
+│   ├── trainer.py                    ← Support model cepat (LightGBM/CatBoost), parallel CV, MLflow integration
+│   ├── evaluator.py
+│   ├── predictor.py
+│   └── utils.py                      ← Setup logger, set seed, memory cleanup, MLflow helpers
+├── scripts/                          ← BARU: Script pendukung (tidak wajib dijalankan tiap run)
+│   └── convert_to_parquet.py         ← Konversi sekali CSV → Parquet (snappy compression)
+├── notebooks/
+│   ├── 01_eda.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   ├── 03_experiment.ipynb
+│   └── archive/
+├── experiments/                      ← Hasil tiap run (model, submission, log, dll)
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_config_loader.py
+│   ├── test_data_loader.py           ← Termasuk test load Parquet
+│   ├── test_preprocessor.py
+│   ├── test_feature_engineering.py
+│   └── test_utils.py
+├── .gitignore
+├── requirements.txt                  ← Ditambah pyarrow (untuk Parquet support)
+├── README.md
+└── main.py                           ← Entry point dengan timing total execution
+
+Optimasi Performa Komputasi (Fokus Utama Update)
+-----------------------------------------------
+Pipeline ini telah dioptimasi secara khusus untuk kecepatan eksekusi dan efisiensi memori:
+
+1. Format Data: Parquet (snappy compression)
+   - Load time: 5–20x lebih cepat dibanding CSV
+   - Ukuran file: 3–10x lebih kecil
+   - Memori: columnar storage + predicate pushdown (hanya baca kolom dibutuhkan)
+
+2. Data Loading
+   - pd.read_parquet otomatis digunakan jika ekstensi .parquet
+   - Selective column loading (opsional di config nanti)
+
+3. Preprocessing & Memory
+   - Downcast numeric types (float64 → float32, int64 → int32)
+   - OneHotEncoder dengan sparse=True (hemat memori drastis jika categorical banyak)
+   - Vectorized operations only (no slow apply/lambda loops)
+
+4. Feature Engineering
+   - Semua operasi vectorized (Pandas/NumPy)
+   - Enable/disable per fitur via config untuk eksperimen cepat
+
+5. Training
+   - Prioritas model cepat: LightGBM > CatBoost > XGBoost
+   - Parallel processing (n_jobs=-1 di CV dan model)
+   - Parameter efisien default (max_bin, subsample, early_stopping)
+
+6. Caching & Reusability
+   - Data processed disimpan di data/processed/ (Parquet)
+   - Preprocessor/model bisa di-cache dengan joblib (opsional fase lanjutan)
+
+Cara Menggunakan (Diperbarui)
+----------------------------
+1. Download dataset Kaggle → taruh di data/raw/ sebagai CSV
+2. Jalankan sekali: python scripts/convert_to_parquet.py
+   → Otomatis konversi semua CSV menjadi Parquet di data/processed/
+3. Update config/*.yaml:
+   - Ganti train_path dan test_path ke .parquet
+   - Sesuaikan logging dan mlflow settings jika perlu
+4. Jalankan: python main.py --config default (atau nama config lain)
+5. Hasil muncul di experiments/<nama_experiment>/
+6. (Opsional) Lihat MLflow UI: mlflow ui --backend-store-uri logs/mlruns
+
+Keunggulan untuk Portofolio (Diperbarui)
+---------------------------------------
+- Clean & professional structure (mirip proyek industri)
+- Config-driven → mudah demo banyak eksperimen
+- Experiment tracking dengan MLflow → reproducibility dan comparison mudah
+- Logging comprehensive → debugging dan monitoring jelas
+- Ada notebooks untuk storytelling (EDA → Feature → Experiment)
+- Ada unit tests → skill software engineering solid
+- Performa komputasi tinggi (Parquet + optimasi memori & kecepatan)
+- Mudah dikembangkan (tambah Optuna, ensemble, Docker, GPU support, dll)

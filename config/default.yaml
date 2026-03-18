@@ -1,0 +1,77 @@
+experiment:
+  name: "default"
+  seed: 42
+
+logging:
+  enabled: true
+  level: "INFO"
+  log_to_file: true
+  log_to_console: true
+  log_dir: "logs"
+  log_filename: "{experiment.name}.log"
+
+mlflow:
+  enabled: true
+  tracking_uri: "logs/mlruns"
+  experiment_name: "{experiment.name}"
+  run_name: null
+  log_params: true
+  log_metrics: true
+  log_artifacts: true
+  log_model: true
+  tags:
+    project: "ml-base-template"
+    author: "Your Name"
+
+model:
+  type: "lightgbm"
+  task_type: "classification"
+  cv:
+    n_folds: 5
+    shuffle: true
+    stratified: true
+
+data:
+  train_path: "data/processed/train.parquet"
+  test_path: "data/processed/test.parquet"
+  target_column: "target"
+  id_column: "id"
+  drop_columns: []
+
+preprocessing:
+  enabled: true
+  numerical_features: []
+  categorical_features: []
+  imputation:
+    enabled: true
+    strategy:
+      numerical: "median"
+      categorical: "most_frequent"
+  encoding:
+    enabled: true
+    method: "onehot"
+    onehot_sparse: true
+  scaling:
+    enabled: false
+    method: "standard"
+    apply_to: "numerical_only"
+  downcast_dtype:
+    enabled: true
+
+feature_engineering:
+  enabled: true
+  interactions: []
+  binning: {}
+
+performance:
+  parallel_jobs: -1
+  cache_preprocessor: false
+
+output:
+  processed_train_path: "experiments/{experiment.name}/train_processed.parquet"
+  processed_test_path: "experiments/{experiment.name}/test_processed.parquet"
+  preprocessor_path: "experiments/{experiment.name}/preprocessor.pkl"
+
+  model_path: "experiments/{experiment.name}/model_final.pkl"
+  submission_path: "experiments/{experiment.name}/submission.csv"
+  feature_importance_path: "experiments/{experiment.name}/feature_importance.png"
