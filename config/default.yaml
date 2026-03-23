@@ -20,8 +20,8 @@ mlflow:
   log_artifacts: true
   log_model: true
   tags:
-    project: "ml-base-template"
-    author: "Your Name"
+    project: "predict-customer-churn"
+    author: "Fahmi Haqqul Ihsan"
 
 model:
   type: "lightgbm"
@@ -34,7 +34,7 @@ model:
 data:
   train_path: "data/processed/train.parquet"
   test_path: "data/processed/test.parquet"
-  target_column: "target"
+  target_column: "Churn"
   id_column: "id"
   drop_columns: []
 
