@@ -434,7 +434,12 @@ class ModelTrainer:
             
             elif self.model_type == 'xgboost':
                 imp_dict = model.get_score(importance_type='gain')
-                imp = [imp_dict.get(f'f{i}', 0) for i in range(len(feature_names))]
+                imp = []
+                for i, feature_name in enumerate(feature_names):
+                    value = imp_dict.get(feature_name)
+                    if value is None:
+                        value = imp_dict.get(f'f{i}', 0.0)
+                    imp.append(value)
                 
             else:
                 continue
