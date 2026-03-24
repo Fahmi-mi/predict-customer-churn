@@ -8,6 +8,7 @@ import time
 
 from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.metrics import roc_auc_score, mean_squared_error
+from sklearn.preprocessing import LabelEncoder
 
 # Model imports
 try:
@@ -74,7 +75,7 @@ class ModelTrainer:
         self.stratified = self.cv_config.get('stratified', True)
         
         self.random_state = config.get('experiment', {}).get('seed', 42)
-        self.model_params = model_params or self._default_model_params()
+        self.model_params = model_params or self.model_config.get('params') or self._get_default_params()
         
         self.mlflow_config = config.get('mlflow', {})
         self.use_mlflow = self.mlflow_config.get('enabled', False) and MLFLOW_AVAILABLE
@@ -82,6 +83,8 @@ class ModelTrainer:
         self.models: List[Any] = []
         self.oof_predictions:Optional[np.ndarray] = None
         self.feature_importances:Optional[pd.DataFrame] = None
+        self.y_train_encoded: Optional[pd.Series] = None
+        self.label_encoder: Optional[LabelEncoder] = None
         
         logger.info(f"ModelTrainer initialized: {self.model_type}, task={self.task_type}")
         logger.info(f"Model params: {self.model_params}")
@@ -160,6 +163,18 @@ class ModelTrainer:
         """
         logger.info(f"Starting {self.n_folds}-fold cross-validation")
         logger.info(f"Training shape: {X.shape}")
+
+        y_for_training = y.copy()
+        if self.task_type == 'classification' and not pd.api.types.is_numeric_dtype(y_for_training):
+            self.label_encoder = LabelEncoder()
+            y_for_training = pd.Series(
+                self.label_encoder.fit_transform(y_for_training.astype(str)),
+                index=y_for_training.index,
+                name=y_for_training.name
+            )
+            logger.info(f"Encoded target labels: {dict(zip(self.label_encoder.classes_, self.label_encoder.transform(self.label_encoder.classes_)))}")
+
+        self.y_train_encoded = y_for_training
         
         if self.use_mlflow:
             self._setup_mlflow()
@@ -173,7 +188,7 @@ class ModelTrainer:
                 shuffle=self.shuffle,
                 random_state=self.random_state
             )
-            splits = kfold.split(X, y)
+            splits = kfold.split(X, y_for_training)
         else:
             kfold = KFold(
                 n_splits=self.n_folds,
@@ -192,9 +207,9 @@ class ModelTrainer:
             start_time = time.time()
             
             X_train_fold = X.iloc[train_idx]
-            y_train_fold = y.iloc[train_idx]
+            y_train_fold = y_for_training.iloc[train_idx]
             X_val_fold = X.iloc[val_idx]
-            y_val_fold = y.iloc[val_idx]
+            y_val_fold = y_for_training.iloc[val_idx]
             
             model = self._train_single_model(
                 X_train_fold, y_train_fold,
@@ -219,7 +234,7 @@ class ModelTrainer:
                 
             self.models.append(model)
             
-        cv_score = self._calculate_metric(y, oof_preds)
+        cv_score = self._calculate_metric(y_for_training, oof_preds)
         cv_std = np.std(fold_scores)
         
         logger.info(f"\n{'='*60}")
@@ -382,6 +397,8 @@ class ModelTrainer:
         
         else:
             preds = model.predict(X)
+        
+        return preds
             
     def _calculate_metric(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
         """
@@ -422,7 +439,7 @@ class ModelTrainer:
             else:
                 continue
             
-        importances.append(imp)
+            importances.append(imp)
         
         avg_importance = np.mean(importances, axis=0)
         
@@ -432,7 +449,7 @@ class ModelTrainer:
         }).sort_values('importance', ascending=False)
         
         logger.info(f"\nTop 10 important features:")
-        logger.info(self.feature_importance.head(10).to_string(index=False))
+        logger.info(self.feature_importances.head(10).to_string(index=False))
         
     def _setup_mlflow(self) -> None:
         """Setup MLflow tracking."""
