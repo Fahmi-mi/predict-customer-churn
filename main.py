@@ -159,9 +159,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 1: LOAD DATA
     # ============================================================
     if mode in ['full', 'train']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 1: LOADING DATA")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -193,9 +194,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 2: PREPROCESSING
     # ============================================================
     if mode in ['full', 'train']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 2: PREPROCESSING")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -236,9 +238,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 3: FEATURE ENGINEERING
     # ============================================================
     if mode in ['full', 'train']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 3: FEATURE ENGINEERING")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -272,9 +275,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 4: TRAINING
     # ============================================================
     if mode in ['full', 'train']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 4: MODEL TRAINING")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -307,9 +311,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 5: EVALUATION
     # ============================================================
     if mode in ['full', 'train']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 5: MODEL EVALUATION")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -363,9 +368,10 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
     # STAGE 6: PREDICTION & SUBMISSION
     # ============================================================
     if mode in ['full', 'predict']:
-        logger.info("\n" + "="*60)
+        logger.info("\n")
+        logger.info("="*60)
         logger.info("STAGE 6: PREDICTION & SUBMISSION")
-        logger.info("="*40)
+        logger.info("="*60)
         
         stage_start = time.time()
         
@@ -416,23 +422,28 @@ def print_summary(results: Dict[str, Any], logger: logging.Logger, total_time: f
         logger: Logger instance
         total_time: Total execution time in seconds
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n")
+    logger.info("="*60)
     logger.info("PIPELINE EXECUTION SUMMARY")
-    logger.info("="*40)
+    logger.info("="*60)
+    logger.info("\n")
     
     if 'timings' in results:
-        logger.info("\nStage Timings:")
+        logger.info("Stage Timings:")
         for stage, duration in results['timings'].items():
             logger.info(f"  {stage:25s}: {format_time(duration)}")
     
-    logger.info(f"\n{'Total Execution Time':25s}: {format_time(total_time)}")
+    logger.info(f"{'Total Execution Time':25s}: {format_time(total_time)}")
+    
+    logger.info("\n")
     
     if 'metrics' in results:
         logger.info("\nModel Performance:")
         for metric_name, value in results['metrics'].items():
             logger.info(f"  {metric_name:25s}: {value:.6f}")
     
-    logger.info("\n" + "="*60)
+    logger.info("\n")
+    logger.info("="*60)
     logger.info("Pipeline completed successfully!")
     logger.info("="*60)
 

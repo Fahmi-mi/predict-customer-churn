@@ -416,7 +416,7 @@ class ModelTrainer:
         else:
             return np.sqrt(mean_squared_error(y_true, y_pred))
         
-    def _calculate_feature_importance(self, feature_names: List[str]) -> None:
+    def _calculate_feature_importances(self, feature_names: List[str]) -> None:
         """
         Calculate average feature importance across folds.
         

@@ -1,0 +1,112 @@
+experiment:
+  name: "lightgbm_fe_v1"
+  seed: 42
+
+logging:
+  enabled: true
+  level: "INFO"
+  log_to_file: true
+  log_to_console: true
+  log_dir: "logs"
+  log_filename: "{experiment.name}.log"
+
+mlflow:
+  enabled: true
+  tracking_uri: "logs/mlruns"
+  experiment_name: "{experiment.name}"
+  run_name: null
+  log_params: true
+  log_metrics: true
+  log_artifacts: true
+  log_model: true
+  tags:
+    project: "predict-customer-churn"
+    author: "Fahmi Haqqul Ihsan"
+
+model:
+  type: "lightgbm"
+  task_type: "classification"
+  cv:
+    n_folds: 5
+    shuffle: true
+    stratified: true
+  params:
+    objective: "binary"
+    metric: "auc"
+    boosting_type: "gbdt"
+    num_leaves: 63
+    learning_rate: 0.03
+    feature_fraction: 0.85
+    bagging_fraction: 0.85
+    bagging_freq: 5
+    max_depth: -1
+    min_child_samples: 30
+    reg_alpha: 0.1
+    reg_lambda: 2.0
+    verbose: -1
+    random_state: 42
+
+data:
+  train_path: "data/processed/train.parquet"
+  test_path: "data/processed/test.parquet"
+  target_column: "Churn"
+  id_column: "id"
+  drop_columns: []
+
+preprocessing:
+  enabled: true
+  numerical_features: []
+  categorical_features: []
+  imputation:
+    enabled: true
+    strategy:
+      numerical: "median"
+      categorical: "most_frequent"
+  encoding:
+    enabled: true
+    method: "onehot"
+    onehot_sparse: true
+  scaling:
+    enabled: false
+    method: "standard"
+    apply_to: "numerical_only"
+  downcast_dtype:
+    enabled: true
+
+feature_engineering:
+  enabled: true
+  interactions:
+    - "tenure*TotalCharges"
+    - "tenure*MonthlyCharges"
+    - "SeniorCitizen*MonthlyCharges"
+  binning:
+    tenure: [1.0, 3.0, 9.0, 16.0, 24.0, 35.0, 47.0, 57.0, 66.0, 71.0, 72.0]
+    MonthlyCharges:
+      [18.25, 28.3, 38.35, 48.4, 58.45, 68.5, 78.55, 88.6, 98.65, 108.7, 118.75]
+    TotalCharges:
+      [
+        18.8,
+        176.3,
+        515.25,
+        765.35,
+        1090.95,
+        1433.65,
+        2156.25,
+        3462.1,
+        4908.25,
+        6312.9,
+        8684.8,
+      ]
+
+performance:
+  parallel_jobs: -1
+  cache_preprocessor: false
+
+output:
+  processed_train_path: "experiments/{experiment.name}/train_processed.parquet"
+  processed_test_path: "experiments/{experiment.name}/test_processed.parquet"
+  preprocessor_path: "experiments/{experiment.name}/preprocessor.pkl"
+
+  model_path: "experiments/{experiment.name}/model_final.pkl"
+  submission_path: "experiments/{experiment.name}/submission.csv"
+  feature_importance_path: "experiments/{experiment.name}/feature_importance.png"
