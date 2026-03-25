@@ -8,9 +8,9 @@ import logging
 import shutil
 
 from src.config_loader import load_config, save_config
-from src.data_loader import load_train_test, save_data
+from src.data_loader import load_data, load_train_test, save_data
 from src.preprocessor import preprocess_data
-from src.feature_engineering import engineer_features
+from src.feature_engineering import FeatureEngineer, engineer_features
 from src.trainer import ModelTrainer
 from src.evaluator import ModelEvaluator
 from src.predictor import predict_and_submit
@@ -383,8 +383,19 @@ def run_pipeline(config: Dict[str, Any], mode: str, logger: logging.Logger) -> D
                 
                 logger.info("Loading test data for prediction...")
                 import pandas as pd
-                X_test_final = pd.read_parquet(config['output']['processed_test_path'])
+                X_test_processed = pd.read_parquet(config['output']['processed_test_path'])
+
+                feature_engineer = FeatureEngineer(config)
+                feature_engineer.fit(X_test_processed)
+                X_test_final = feature_engineer.transform(X_test_processed)
+
                 test_ids = None
+                id_column = config['data'].get('id_column')
+                if id_column:
+                    test_path = config['data']['test_path']
+                    test_df_for_id = load_data(test_path, columns=[id_column])
+                    if id_column in test_df_for_id.columns:
+                        test_ids = test_df_for_id[id_column].copy()
             else:
                 models = results['trainer'].models
                 X_test_final = results['X_test_final']

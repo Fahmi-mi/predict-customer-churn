@@ -67,24 +67,74 @@ class ModelPredictor:
         Returns:
             Predictions array
         """
+        X_aligned = self._align_features_for_model(model, X)
+
         if self.model_type == 'lightgbm':
             import lightgbm as lgb
-            preds = model.predict(X, num_iteration=model.best_iteration)
+            preds = model.predict(X_aligned, num_iteration=model.best_iteration)
         
         elif self.model_type == 'catboost':
-            preds = model.predict(X, prediction_type='Probability')
+            preds = model.predict(X_aligned, prediction_type='Probability')
             if len(preds.shape) > 1:
                 preds = preds[:, 1]
         
         elif self.model_type == 'xgboost':
             import xgboost as xgb
-            dtest = xgb.DMatrix(X)
+            dtest = xgb.DMatrix(X_aligned)
             preds = model.predict(dtest, iteration_range=(0, model.best_iteration))
         
         else:
-            preds = model.predict(X)
+            preds = model.predict(X_aligned)
         
         return preds
+
+    def _align_features_for_model(self, model: Any, X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Align inference features to the schema expected by the trained model.
+
+        Args:
+            model: Trained model
+            X: Input features
+
+        Returns:
+            DataFrame aligned to expected feature names
+        """
+        if not isinstance(X, pd.DataFrame):
+            return X
+
+        expected_features = None
+
+        if self.model_type == 'xgboost':
+            expected_features = getattr(model, 'feature_names', None)
+        elif self.model_type == 'lightgbm':
+            try:
+                expected_features = model.feature_name()
+            except Exception:
+                expected_features = None
+        elif self.model_type == 'catboost':
+            expected_features = getattr(model, 'feature_names_', None)
+
+        if not expected_features:
+            return X
+
+        missing_features = [f for f in expected_features if f not in X.columns]
+        extra_features = [f for f in X.columns if f not in expected_features]
+
+        X_aligned = X.copy()
+        for feature in missing_features:
+            X_aligned[feature] = 0.0
+
+        if missing_features or extra_features:
+            logger.warning(
+                "Feature schema mismatch detected. Missing=%d, Extra=%d. Auto-aligned for prediction.",
+                len(missing_features),
+                len(extra_features)
+            )
+
+        X_aligned = X_aligned.drop(columns=extra_features, errors='ignore')
+        X_aligned = X_aligned.loc[:, expected_features]
+
+        return X_aligned
     
     def create_submission(
         self,
